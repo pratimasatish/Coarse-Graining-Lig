@@ -2,22 +2,24 @@ import numpy as np
 import argparse
 import matplotlib.pyplot as plt
 
-# parser = argparse.ArgumentParser(description="")
-# parser.add_argument("-bias", type=str, help="bias value to analyse")
+parser = argparse.ArgumentParser(description="")
+parser.add_argument("-bias", type=str, help="bias value to analyse")
 # parser.add_argument("-clean", action='store_true', help="whether to clean data or not")
 # parser.add_argument("-row", choices=["x","z"], help="which direction to average out")
 # parser.add_argument("-remove_NN", action='store_true', help="whether to remove sites with less than 4 NN's")
-# args = parser.parse_args()
+args = parser.parse_args()
 
-data = np.genfromtxt('thetasoft.-0.7250.txt', delimiter=' ')
+data = np.genfromtxt('theta' + args.bias + '.txt', delimiter=' ')
 data = data.reshape((-1,20,12))
 
 plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
+plt.rc('font', family='serif', weight='bold')
+plt.rc('xtick', labelsize=24)
+plt.rc('ytick', labelsize=24)
 
-data_txz = np.zeros((data.shape[0]-3000, data.shape[1], data.shape[2]))
-data_txz[:, ::2, :] = data[3000:, 0:10, :]
-data_txz[:, 1::2, :] = data[3000:, 10:20, :]
+data_txz = np.zeros((data.shape[0], data.shape[1], data.shape[2]))
+data_txz[:, ::2, :] = data[:, 0:10, :]
+data_txz[:, 1::2, :] = data[:, 10:20, :]
 ligdata = data_txz
 T = len(ligdata)
 
@@ -75,16 +77,27 @@ for i in range(T):
 cg_theta = np.array(cg_theta)
 if remove_NN == None:
     cg_theta = cg_theta.reshape((-1,20,12))
+    cg_mean = np.mean(cg_theta, axis=0)
+else:
+    cg_mean = np.mean(cg_theta, axis=1)
 
-bins = np.linspace(-0.9, -0.5, 200)
-cg_mean = np.mean(cg_theta, axis=1)
-cg_hist, bins = np.histogram(cg_mean, bins=bins)
+# bins = np.linspace(-0.9, -0.5, 200)
+# cg_hist, bins = np.histogram(cg_mean, bins=bins)
 # cg_hist, bins = np.histogram(cg_theta[1000], bins=bins)
-bins = 0.5 * (bins[1:] + bins[:-1])
-plt.plot(bins, cg_hist, 'ro')
-plt.plot(bins, cg_hist)
+# bins = 0.5 * (bins[1:] + bins[:-1])
+# plt.plot(bins, cg_hist, 'ro')
+# plt.plot(bins, cg_hist)
+# plt.show()
+
+plt.imshow(cg_mean, aspect=0.6, cmap="seismic", origin="lower", interpolation="none", vmin=-0.8, vmax=-0.1)
+plt.xticks(np.arange(0, 12, 1))
+plt.yticks(np.arange(0, 20, 1))
+plt.xlim(-0.5,11.5)
+plt.ylim(-0.5,18.5)
+for i in np.arange(-0.5,12,1.0):
+    plt.vlines(i, -0.5, 18.5, linestyle='solid', linewidth=2)
+for i in np.arange(-0.5,19,1.0):
+    plt.hlines(i, -0.5, 11.5, linestyle='solid', linewidth=2)
+plt.colorbar()
 plt.show()
-
-
-
 
