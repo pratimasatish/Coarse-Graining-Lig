@@ -4,13 +4,15 @@ import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description="")
 parser.add_argument("-bias", type=str, help="bias value to analyse")
-# parser.add_argument("-clean", action='store_true', help="whether to clean data or not")
+parser.add_argument("-pbc", action='store_true', help="whether to apply PBCs or not")
 # parser.add_argument("-row", choices=["x","z"], help="which direction to average out")
 # parser.add_argument("-remove_NN", action='store_true', help="whether to remove sites with less than 4 NN's")
 args = parser.parse_args()
 
 data = np.genfromtxt('theta' + args.bias + '.txt', delimiter=' ')
 data = data.reshape((-1,20,12))
+Lx = 82.4293
+Lz = 81.004
 
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif', weight='bold')
@@ -51,7 +53,14 @@ for j in range(n_cd):
     x = cg_xz[j][0]
     z = cg_xz[j][1]
     # now find the Cd atoms closest to this coarse grained site
-    dist = np.sqrt( (x - cd_data[:,2])**2 + (z - cd_data[:,4])**2 )
+    dx = x - cd_data[:,2]
+    dz = z - cd_data[:,4]
+    if args.pbc:
+        # apply PBCs
+        dx = dx - Lx * np.round(dx / Lx)
+        dz = dz - Lz * np.round(dz / Lz)
+
+    dist = np.sqrt( dx**2 + dz**2 )
     full_indices.append( np.where( dist <= nn_dist+0.05 ) )
 #     print j, indices
 
@@ -93,9 +102,9 @@ plt.imshow(cg_mean, aspect=0.6, cmap="seismic", origin="lower", interpolation="n
 plt.xticks(np.arange(0, 12, 1))
 plt.yticks(np.arange(0, 20, 1))
 plt.xlim(-0.5,11.5)
-plt.ylim(-0.5,18.5)
+plt.ylim(-0.5,19.5)
 for i in np.arange(-0.5,12,1.0):
-    plt.vlines(i, -0.5, 18.5, linestyle='solid', linewidth=2)
+    plt.vlines(i, -0.5, 19.5, linestyle='solid', linewidth=2)
 for i in np.arange(-0.5,19,1.0):
     plt.hlines(i, -0.5, 11.5, linestyle='solid', linewidth=2)
 plt.colorbar()
