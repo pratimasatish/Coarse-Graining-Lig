@@ -1,6 +1,8 @@
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import math
 
 parser = argparse.ArgumentParser(description="")
 parser.add_argument("-bias", type=str, help="bias value to analyse")
@@ -77,7 +79,9 @@ else:
 # now assign theta values to each coarse grained site as a function of time
 cg_theta = []
 for i in range(T):
+# for i in [T-1]:
     theta_t = []
+
     for j in range(len(indices)):
         theta_site = theta_lat[i][indices[j]]
         theta_t.append(np.mean(theta_site))
@@ -89,6 +93,69 @@ if remove_NN == None:
     cg_mean = np.mean(cg_theta, axis=0)
 else:
     cg_mean = np.mean(cg_theta, axis=1)
+
+# cg_mean = np.transpose(cg_mean)
+print cg_theta.shape
+
+X = cg_mean.shape[0]
+Z = cg_mean.shape[1]
+mean = np.mean(cg_theta[:,:,:], axis=(0,1,2))
+cg_theta[:, :, :] -= mean
+all_corr_xz = []
+samplez = 100
+DT = T / samplez
+# fig = plt.figure()
+# ax  = fig.add_subplot(111, projection='3d')
+for sample in xrange(samplez):
+    To = DT*sample
+    Tf = DT*(sample+1)
+    sub_txz = cg_theta[To:Tf, :, :]
+    
+    cov_xz = np.zeros((X/2, Z/2))
+    for t in xrange(DT):
+       for x in xrange(X/2):
+            for z in xrange(Z/2):
+#                 print cov_xz.shape
+#                 print sub_txz[t,x,z].shape
+#                 print sub_txz[t,x : x + X/2,z : z + Z/2].shape
+                cov_xz += sub_txz[t, x, z] * sub_txz[t, x : x + X/2, z : z + Z/2]
+    
+    cov_xz /= (DT * X/2 * Z/2 )
+    corr_xz = cov_xz / cov_xz[0,0]
+    
+    x = range(X/2)
+    z = range(Z/2)
+    xv, zv = np.meshgrid(x, z)
+    
+    all_corr_xz.append(corr_xz)
+#     ax.plot_surface(xv, zv, corr_xz.T)
+
+all_corr_xz = np.array(all_corr_xz)
+m_corr_xz = np.mean(all_corr_xz, axis=0)
+d_corr_xz = np.std (all_corr_xz, axis=0) / np.sqrt(samplez)
+print m_corr_xz[1:,0].shape, range(1,X/2)
+
+# correlation plots with first data point removed
+plt.errorbar(range(1, X/2), m_corr_xz[1:,0], d_corr_xz[1:,0], c='b')
+plt.hlines(0, 1, X/2, linestyles="dashed")
+plt.xlim([0.9,X/2])
+plt.errorbar(range(1, Z/2), m_corr_xz[0,1:], d_corr_xz[0,1:], c='g')
+plt.hlines(0, 1, Z/2, linestyles="dashed")
+plt.xlabel('x or z')
+plt.ylabel('G(x, z)')
+plt.legend(["X", "Z"])
+plt.show()
+
+
+# pnt = ""
+# for row in range(X):
+#     strs = ["{:+1.4f}".format(x).zfill(5) for x in cg_mean[row, :]]
+#     pnt = pnt + str(row).zfill(2) + " " + " ".join(strs)
+#     pnt = pnt + "\n"
+# print pnt
+
+print np.mean(cg_mean)
+print np.std(cg_mean)
 
 # bins = np.linspace(-0.9, -0.5, 200)
 # cg_hist, bins = np.histogram(cg_mean, bins=bins)
